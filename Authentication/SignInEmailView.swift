@@ -13,26 +13,34 @@ final class SignInEmailViewModel: ObservableObject {
     @Published var email: String = ""
     @Published var password: String = ""
     
-    func signIn(){
+    func signUp() async throws{
         guard !email.isEmpty, !password.isEmpty else {
             print("no email or password found.")
             return
         }
         
-        Task{
-            do{
-                let returedUserData = try await AuthenticationManager.shared.createUser(email: email, password: password)
-                print("User signed in successfully: \(returedUserData)")
-            } catch {
-                print("Error: \(error)")
-            }
-        }
+        
+        try await AuthenticationManager.shared.createUser(email: email, password: password)
+      
     }
+    
+    func signIn() async throws{
+        guard !email.isEmpty, !password.isEmpty else {
+            print("no email or password found.")
+            return
+        }
+        
+        
+        try await AuthenticationManager.shared.signInUser(email: email, password: password)
+      
+    }
+
 }
 
 struct SignInEmailView: View {
     
-@StateObject private var viewModel = SignInEmailViewModel()
+    @StateObject private var viewModel = SignInEmailViewModel()
+    @Binding var showSignInView: Bool
     
     var body: some View {
         VStack{
@@ -47,9 +55,23 @@ struct SignInEmailView: View {
                 .cornerRadius(10)
                 
             Button{
-                viewModel.signIn()
+                Task{
+                    do{
+                        try await viewModel.signUp()
+                        showSignInView = false
+                    }catch{
+                        print(error)
+                    }
+                    
+                    do{
+                        try await viewModel.signIn()
+                        showSignInView = false
+                    }catch{
+                        print(error)
+                    }
+                }
             } label: {
-                Text("Sign in")
+                Text("Sign In")
                     .font(.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -61,10 +83,10 @@ struct SignInEmailView: View {
             Spacer()
         }
         .padding()
-        .navigationTitle(Text("Sign In With Email"))
+        .navigationTitle(Text("Sign Up With Email"))
     }
 }
 
 #Preview {
-    SignInEmailView()
+    SignInEmailView(showSignInView: .constant(false))
 }
